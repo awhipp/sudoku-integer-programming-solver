@@ -7,10 +7,7 @@
 
 import pandas as pd
 from pulp import *
-
-# Ingests the sudoku.csv from https://www.kaggle.com/bryanpark/sudoku
-# Be sure to have it uploaded into Colab or next to wherever this script is
-sudoku_puzzles = pd.read_csv(r'sudoku.csv')
+import math
 
 """# Helper Functions to convert records to Soduku 2D-Arrays"""
 
@@ -38,19 +35,23 @@ def convert_to_soduku(line, n):
 def compare_solutions(input, expected):
   return input == expected
 
+# Must be perfect square (ie: 4x4, 9x9, 16x16, 25x25, 100x100, etc.)
+def subn_convert(n):
+  root = math.sqrt(n)
+  if int(root + 0.5) ** 2 == n:
+    return int(root)
+  else:
+    raise Exception('[%s x %s] is not an allowable dimension. Must be a perfect square (ie: 9x9 or 25x25)' % (n, n))
+
 """
 # Setup Constants Function"""
 
-# TODO: Redefine for n instead of just for 9
 def define_constants(n):
   Vals = range(1, n+1)  # Sequence of 1 to n
   Rows = range(0, n)    # Sequence of 0 to n-1 (Since Python is 0-based)
   Cols = range(0, n)    # Sequence of 0 to n-1 (Since Python is 0-based)
 
-  if n % 3 != 0:
-    raise Exception('%s needs to be divisible by 3')
-
-  SubN = int(n/3)       
+  SubN = subn_convert(n)       
   Sectors = []
 
   for i in range(SubN):
@@ -147,7 +148,7 @@ Makes it easier to read and print to console
 
 def pretty_print_solution(soln):
   n = len(soln)
-  sub_n = len(soln)/3
+  sub_n = subn_convert(n)
 
   line = 3*n*'-' + '\n'
   prnt = ''
@@ -168,15 +169,30 @@ def pretty_print_solution(soln):
   prnt += line
   print(prnt)
 
-"""# Iterate through sudoku puzzles and compare output"""
+"""# Iterate through 4x4 sudoku puzzles and compare output"""
 
-for i, row in sudoku_puzzles.iterrows():
-  print('Testing Quiz #%s' % str(i+1))
-  sudoku_problem, expected_solution = get_quiz_set(row)
-  sudoku_problem = convert_to_soduku(sudoku_problem, 9)
-  expected_solution = convert_to_soduku(expected_solution, 9)
+print('Testing Quizes 4x4')
 
-  Vals, Rows, Cols, Sectors = define_constants(9)
+n = 4
+sudoku_problems = [
+  '1000000400200300',
+  '0014000000010300',
+  '0000013000240000'
+]
+expected_solutions = [
+  '1432321441232341',
+  '3214412324311342',
+  '3241413213242413'
+]
+
+for idx, p in enumerate(sudoku_problems):
+  print('Testing Quiz #%s' % (idx+1))
+  sudoku_problem = p
+  expected_solution = expected_solutions[idx] 
+  sudoku_problem = convert_to_soduku(sudoku_problem, n)
+  expected_solution = convert_to_soduku(expected_solution, n)
+
+  Vals, Rows, Cols, Sectors = define_constants(n)
   problem, options = define_problem_and_constraints(Vals, Rows, Cols)
   problem = define_values_and_solve(problem, options, sudoku_problem)
   solution = construct_solution_matrix(Rows, Cols, Vals, options)
@@ -188,4 +204,33 @@ for i, row in sudoku_puzzles.iterrows():
     print('[Output]')
     pretty_print_solution(expected_solution)    
     raise Exception('Failed to find correct solution')
+
+"""# Iterate through 9x9 sudoku puzzles and compare output"""
+
+# Ingests the sudoku.csv from https://www.kaggle.com/bryanpark/sudoku
+# Be sure to have it uploaded into Colab or next to wherever this script is
+sudoku_puzzles = pd.read_csv(r'sudoku.csv')
+number_to_test = 10
+
+for i, row in sudoku_puzzles.iterrows():
+  print('Testing Quiz #%s' % str(i+1))
+  sudoku_problem, expected_solution = get_quiz_set(row)
+  sudoku_problem = convert_to_soduku(sudoku_problem, 9)
+  expected_solution = convert_to_soduku(expected_solution, 9)
+ 
+  Vals, Rows, Cols, Sectors = define_constants(9)
+  problem, options = define_problem_and_constraints(Vals, Rows, Cols)
+  problem = define_values_and_solve(problem, options, sudoku_problem)
+  solution = construct_solution_matrix(Rows, Cols, Vals, options)
+  success = compare_solutions(solution, expected_solution)
+ 
+  if not success:
+    print('[Input]')
+    pretty_print_solution(solution)
+    print('[Output]')
+    pretty_print_solution(expected_solution)    
+    raise Exception('Failed to find correct solution')
+  
+  if i+1 == number_to_test:
+    break
 

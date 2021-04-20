@@ -211,14 +211,15 @@ for idx, p in enumerate(sudoku_problems):
 # Be sure to have it uploaded into Colab or next to wherever this script is
 sudoku_puzzles = pd.read_csv(r'sudoku.csv')
 number_to_test = 10
+n = 9
 
 for i, row in sudoku_puzzles.iterrows():
   print('Testing Quiz #%s' % str(i+1))
   sudoku_problem, expected_solution = get_quiz_set(row)
-  sudoku_problem = convert_to_soduku(sudoku_problem, 9)
-  expected_solution = convert_to_soduku(expected_solution, 9)
+  sudoku_problem = convert_to_soduku(sudoku_problem, n)
+  expected_solution = convert_to_soduku(expected_solution, n)
  
-  Vals, Rows, Cols, Sectors = define_constants(9)
+  Vals, Rows, Cols, Sectors = define_constants(n)
   problem, options = define_problem_and_constraints(Vals, Rows, Cols)
   problem = define_values_and_solve(problem, options, sudoku_problem)
   solution = construct_solution_matrix(Rows, Cols, Vals, options)
